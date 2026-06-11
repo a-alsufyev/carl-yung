@@ -258,9 +258,8 @@ export default function App() {
 
     const cleanSectionContent = (contentLines: string[]) => {
       let content = contentLines.join("\n").trim();
-      // Remove leading/trailing formatting remnants
-      content = content.replace(/^[:\s\-\*#]+/g, "").trim();
-      content = content.replace(/^\*\*+|\*\*+$/g, "").trim();
+      // Remove leading colons or initial whitespace remnants safely, preserving markdown lists
+      content = content.replace(/^[:\s]+/g, "").trim();
       return content;
     };
 
@@ -290,46 +289,73 @@ export default function App() {
   // Render HTML markup from simpler markdown formats (bullet points, bold text)
   const renderMarkdownAlternative = (mdText: string) => {
     if (!mdText) return null;
-    const lines = mdText.split("\n\n").map(p => p.trim()).filter(Boolean);
 
-    return lines.map((line, lid) => {
-      // Check if it's a list or bullet point
-      if (line.startsWith("*") || line.startsWith("-") || line.match(/^\d+\./)) {
-        const listItems = line.split(/\n[\s*-*\d+\.]+/).map(x => x.replace(/^[\s*-*\d+\.]+\s*/, "").trim()).filter(Boolean);
-        return (
-          <ul key={lid} className="space-y-3 my-4 list-disc list-inside text-slate-300">
-            {listItems.map((item, i) => (
-              <li key={i} className="leading-relaxed font-sans text-sm md:text-base selection:bg-amber-600/30">
-                {formatBoldText(item)}
-              </li>
-            ))}
+    const lines = mdText.split(/\r?\n/);
+    const elements: React.ReactNode[] = [];
+    let currentListItems: React.ReactNode[] = [];
+
+    const flushList = (groupId: number) => {
+      if (currentListItems.length > 0) {
+        elements.push(
+          <ul key={`list-${groupId}`} className="space-y-3 mt-4 list-disc list-inside text-slate-300">
+            {...currentListItems}
           </ul>
         );
+        currentListItems = [];
+      }
+    };
+
+    lines.forEach((line, index) => {
+      const trimmed = line.trim();
+      if (!trimmed) {
+        flushList(index);
+        return;
       }
 
-      // Check if it's a minor header within section
-      if (line.startsWith("###")) {
-        return (
-          <h4 key={lid} className="text-lg font-semibold text-amber-200 mt-5 mb-2 font-display uppercase tracking-wide">
-            {line.replace(/^###\s*/, "")}
+      // Check if it's a list item (starts with *, -, •, or digits followed by . or ) )
+      const isBullet = trimmed.startsWith("* ") || trimmed.startsWith("- ") || trimmed.startsWith("• ");
+      const isNumeric = /^\d+[\.\)]\s+/.test(trimmed);
+
+      if (isBullet || isNumeric) {
+        let cleanedContent = trimmed;
+        if (isBullet) {
+          cleanedContent = trimmed.substring(2).trim();
+        } else {
+          cleanedContent = trimmed.replace(/^\d+[\.\)]\s+/, "").trim();
+        }
+
+        currentListItems.push(
+          <li key={`li-${index}`} className="leading-relaxed font-sans text-sm md:text-base selection:bg-amber-600/30">
+            {formatBoldText(cleanedContent)}
+          </li>
+        );
+      } else if (trimmed.startsWith("###")) {
+        flushList(index);
+        elements.push(
+          <h4 key={`h4-${index}`} className="text-lg font-semibold text-amber-200 mt-5 mb-2 font-display uppercase tracking-wide">
+            {trimmed.replace(/^###\s*/, "")}
           </h4>
         );
-      }
-      if (line.startsWith("##")) {
-        return (
-          <h3 key={lid} className="text-xl font-bold text-amber-100 mt-6 mb-3 font-display uppercase tracking-wide border-b border-slate-800 pb-1">
-            {line.replace(/^##\s*/, "")}
+      } else if (trimmed.startsWith("##")) {
+        flushList(index);
+        elements.push(
+          <h3 key={`h3-${index}`} className="text-xl font-bold text-amber-100 mt-6 mb-3 font-display uppercase tracking-wide border-b border-slate-800 pb-1">
+            {trimmed.replace(/^##\s*/, "")}
           </h3>
         );
+      } else {
+        flushList(index);
+        elements.push(
+          <p key={`p-${index}`} className="leading-relaxed text-sm md:text-base text-slate-300 font-sans my-3 selection:bg-amber-600/30">
+            {formatBoldText(trimmed)}
+          </p>
+        );
       }
-
-      // Normal paragraph
-      return (
-        <p key={lid} className="leading-relaxed text-sm md:text-base text-slate-300 font-sans my-3 space-y-2 selection:bg-amber-600/30">
-          {formatBoldText(line)}
-        </p>
-      );
     });
+
+    flushList(lines.length);
+
+    return elements;
   };
 
   const formatBoldText = (text: string) => {
