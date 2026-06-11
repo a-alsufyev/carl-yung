@@ -3,6 +3,10 @@ import path from "path";
 import fs from "fs";
 import { createServer as createViteServer } from "vite";
 import OpenAI from "openai";
+import dotenv from "dotenv";
+
+// Load environment variables from .env file when running in self-hosted or Docker containers
+dotenv.config();
 
 const app = express();
 const PORT = 3000;
@@ -32,10 +36,17 @@ app.post("/api/analyze", async (req, res) => {
       return res.status(400).json({ error: "Не все ответы предоставлены. Необходимо ответить на все 7 вопросов." });
     }
 
-    // Read the unmodified prompt as system instruction
-    const promptPath = path.join(process.cwd(), "src", "jungian_prompt.txt");
+    // Read the unmodified prompt as system instruction (with fallback search for production stages)
+    let promptPath = path.join(process.cwd(), "src", "jungian_prompt.txt");
     if (!fs.existsSync(promptPath)) {
-      return res.status(500).json({ error: "Системный файл подсказки не найден на сервере." });
+      promptPath = path.join(__dirname, "src", "jungian_prompt.txt");
+    }
+    if (!fs.existsSync(promptPath)) {
+      promptPath = path.join(__dirname, "jungian_prompt.txt");
+    }
+
+    if (!fs.existsSync(promptPath)) {
+      return res.status(500).json({ error: "Системный файл подсказки не найден на сервере (заданный путь: " + promptPath + ")" });
     }
     const systemPrompt = fs.readFileSync(promptPath, "utf-8");
 
