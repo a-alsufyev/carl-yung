@@ -121,6 +121,30 @@ export default function App() {
     }
   };
 
+  // Listen for Enter key to proceed to the next step
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (screen === "test" && e.key === "Enter") {
+        // Prevent triggering if user is currently typing inside textarea
+        if (document.activeElement?.tagName === "TEXTAREA") {
+          return;
+        }
+        
+        // If an option is selected for the current question, go to the next step
+        const activeAnswer = answers.find(a => a.questionId === currentQuestion?.id);
+        if (activeAnswer) {
+          e.preventDefault();
+          handleNext();
+        }
+      }
+    };
+
+    window.addEventListener("keydown", handleKeyDown);
+    return () => {
+      window.removeEventListener("keydown", handleKeyDown);
+    };
+  }, [screen, currentQuestionIndex, answers, customText, currentQuestion]);
+
   const resetAudit = () => {
     setScreen("welcome");
     setCurrentQuestionIndex(0);
