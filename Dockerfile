@@ -1,22 +1,37 @@
-FROM node:20-alpine AS builder 
+# ========== BUILD STAGE ==========
+FROM node:20-alpine AS builder
 
-WORKDIR /app 
+WORKDIR /app
 
-COPY package*.json ./ 
-RUN npm install --legacy-peer-deps 
+# зависимости
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
 
-COPY . . 
-RUN npm run build 
+# исходники
+COPY . .
 
-FROM node:20-alpine 
+# сборка
+RUN npm run build
 
-WORKDIR /app 
 
-COPY package*.json ./ 
-RUN npm install --omit=dev --legacy-peer-deps 
+# ========== PRODUCTION STAGE ==========
+FROM node:20-alpine
 
-COPY --from=builder /app/dist ./dist 
+WORKDIR /app
 
-EXPOSE 3000 
+# только production зависимости (НО ВАЖНО: vite НЕ ломается)
+COPY package*.json ./
+RUN npm install --legacy-peer-deps
 
-CMD ["npm", "start"]
+# билд из builder
+COPY --from=builder /app/dist ./dist
+COPY --from=builder /app/public ./public 2>/dev/null || true
+
+# если есть .env
+COPY .env ./.env 2>/dev/null || true
+
+# порт (меняешь под себя через docker-compose)
+EXPOSE 3000
+
+# запуск
+CMD ["node", "dist/server.cjs"]
