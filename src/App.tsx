@@ -178,30 +178,73 @@ export default function App() {
 
     if (!text) return sections;
 
-    // Split text by recognized Russian markdown headers
-    const parts = text.split(/(⚡\s*ЮНГИАНСКИЙ\s*ПРОФИЛЬ|🎭\s*ТВОЙ\s*ДОМИНИРУЮЩИЙ|👑\s*ИДЕАЛЬНЫЙ\s*АРХЕТИП|🚀\s*СТРАТЕГИЯ\s*АКТИВАЦИИ)/gi);
-    
-    let currentKey: keyof typeof sections = "other";
-    sections.other = parts[0] || "";
+    const lines = text.split(/\r?\n/);
+    let currentSection: keyof typeof sections = "other";
+    const lineBundles: Record<keyof typeof sections, string[]> = {
+      profile: [],
+      archetype: [],
+      idealFemale: [],
+      strategy: [],
+      other: []
+    };
 
-    for (let i = 1; i < parts.length; i += 2) {
-      const headerToken = parts[i].toLowerCase();
-      const bodyContent = parts[i + 1] || "";
+    for (const line of lines) {
+      const trimmed = line.trim();
+      const lower = trimmed.toLowerCase();
+      
+      let isHeader = false;
+      let matchedSection: keyof typeof sections = "other";
+      let headerPrefixRegex: RegExp | null = null;
 
-      if (headerToken.includes("юнгианский") || headerToken.includes("профиль")) {
-        currentKey = "profile";
-      } else if (headerToken.includes("доминирующий") || headerToken.includes("архетип")) {
-        currentKey = "archetype";
-      } else if (headerToken.includes("идеальный") || headerToken.includes("женщины") || headerToken.includes("союза")) {
-        currentKey = "idealFemale";
-      } else if (headerToken.includes("стратегия") || headerToken.includes("активации")) {
-        currentKey = "strategy";
-      } else {
-        currentKey = "other";
+      if ((trimmed.includes("⚡") || lower.includes("юнгианский профиль")) && (lower.includes("профиль") || lower.includes("личности"))) {
+        isHeader = true;
+        matchedSection = "profile";
+        headerPrefixRegex = /^[\s*\-#]*⚡\s*юнгианский\s*профиль\s*личности\s*(?::|\s*\*\*)*\s*/i;
+      } else if ((trimmed.includes("🎭") || lower.includes("доминирующий")) && lower.includes("архетип")) {
+        isHeader = true;
+        matchedSection = "archetype";
+        headerPrefixRegex = /^[\s*\-#]*🎭\s*(?:твой\s*)?доминирующий\s*(?:мужской\s*)?архетип\s*(?::|\s*\*\*)*\s*/i;
+      } else if ((trimmed.includes("👑") || lower.includes("идеальный архетип")) && (lower.includes("женщины") || lower.includes("союза"))) {
+        isHeader = true;
+        matchedSection = "idealFemale";
+        headerPrefixRegex = /^[\s*\-#]*👑\s*идеальный\s*архетип\s*женщины\s*(?:\(синергия\s*союза\))?\s*(?::|\s*\*\*)*\s*/i;
+      } else if ((trimmed.includes("🚀") || lower.includes("стратегия активации")) && (lower.includes("силы") || lower.includes("активации"))) {
+        isHeader = true;
+        matchedSection = "strategy";
+        headerPrefixRegex = /^[\s*\-#]*🚀\s*стратегия\s*активации\s*(?:мужской\s*)?силы\s*(?::|\s*\*\*)*\s*/i;
       }
 
-      sections[currentKey] = bodyContent;
+      if (isHeader) {
+        currentSection = matchedSection;
+        let remainingText = trimmed;
+        if (headerPrefixRegex) {
+          remainingText = trimmed.replace(headerPrefixRegex, "").trim();
+        }
+        remainingText = remainingText.replace(/^[:\s*\-*#]+/g, "").trim();
+        remainingText = remainingText.replace(/^\*\*+|\*\*+$/g, "").trim();
+        
+        if (remainingText.length > 0) {
+          lineBundles[currentSection].push(remainingText);
+        }
+        continue;
+      }
+
+      lineBundles[currentSection].push(line);
     }
+
+    const cleanSectionContent = (contentLines: string[]) => {
+      let content = contentLines.join("\n").trim();
+      // Remove leading/trailing formatting remnants
+      content = content.replace(/^[:\s\-\*#]+/g, "").trim();
+      content = content.replace(/^\*\*+|\*\*+$/g, "").trim();
+      return content;
+    };
+
+    sections.profile = cleanSectionContent(lineBundles.profile);
+    sections.archetype = cleanSectionContent(lineBundles.archetype);
+    sections.idealFemale = cleanSectionContent(lineBundles.idealFemale);
+    sections.strategy = cleanSectionContent(lineBundles.strategy);
+    sections.other = cleanSectionContent(lineBundles.other);
 
     // fallback if split fails to yield results
     if (!sections.profile && !sections.archetype && !sections.idealFemale && !sections.strategy) {
