@@ -1,0 +1,9 @@
+services: 
+  app:
+    build: . 
+    container_name: carl-yung
+    ports: 
+      - "3030:3000" 
+    env_file: 
+      - .env 
+    restart: always

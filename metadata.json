@@ -1,0 +1,6 @@
+{
+  "name": "Юнгианский аудит мужской силы",
+  "description": "Интерактивный юнгианский тест-аудит мужской структуры психики, теневых сторон и архетипов союза с глубоким психологическим анализом от ИИ.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
