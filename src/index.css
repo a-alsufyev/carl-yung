@@ -22,4 +22,7 @@
   .gold-gradient-bg {
     background: radial-gradient(circle at 50% 50%, rgba(197, 151, 36, 0.15) 0%, rgba(2, 6, 23, 0.45) 80%);
   }
+  .rose-gradient-bg {
+    background: radial-gradient(circle at 50% 50%, rgba(244, 63, 94, 0.13) 0%, rgba(2, 6, 23, 0.45) 80%);
+  }
 }

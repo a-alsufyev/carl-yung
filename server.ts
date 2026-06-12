@@ -30,18 +30,21 @@ function getOpenAI(): OpenAI {
 // API endpoint to analyze audit responses
 app.post("/api/analyze", async (req, res) => {
   try {
-    const { answers } = req.body;
+    const { answers, gender } = req.body;
     if (!answers || !Array.isArray(answers) || answers.length < 7) {
       return res.status(400).json({ error: "Не все ответы предоставлены. Необходимо ответить на все 7 вопросов." });
     }
 
+    const isFemale = gender === "female";
+    const promptFilename = isFemale ? "jungian_prompt_female.txt" : "jungian_prompt.txt";
+
     // Read the unmodified prompt as system instruction (with fallback search for production stages)
-    let promptPath = path.join(process.cwd(), "src", "jungian_prompt.txt");
+    let promptPath = path.join(process.cwd(), "src", promptFilename);
     if (!fs.existsSync(promptPath)) {
-      promptPath = path.join(__dirname, "src", "jungian_prompt.txt");
+      promptPath = path.join(__dirname, "src", promptFilename);
     }
     if (!fs.existsSync(promptPath)) {
-      promptPath = path.join(__dirname, "jungian_prompt.txt");
+      promptPath = path.join(__dirname, promptFilename);
     }
 
     if (!fs.existsSync(promptPath)) {
@@ -50,7 +53,10 @@ app.post("/api/analyze", async (req, res) => {
     const systemPrompt = fs.readFileSync(promptPath, "utf-8");
 
     // Format the prompt containing answers
-    let userSubmissionContent = "Пользователь заполнил аудит мужской силы. Вот его ответы:\n\n";
+    let userSubmissionContent = isFemale 
+      ? "Пользовательница заполнила аудит женской личности и архетипов союза. Вот её ответы:\n\n"
+      : "Пользователь заполнил аудит мужской силы. Вот его ответы:\n\n";
+
     answers.forEach((ans: any, index: number) => {
       userSubmissionContent += `**Вопрос ${index + 1}:** ${ans.questionText || ""}\n`;
       userSubmissionContent += `**Ответ:** ${ans.selectedOptionText || ""}\n`;
