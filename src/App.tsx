@@ -977,10 +977,23 @@ export default function App() {
       </main>
 
       {/* Footer credits lines */}
-      <footer className="w-full text-center py-6 border-t border-slate-900/40 text-[10px] sm:text-xs font-mono text-slate-600 z-10 uppercase tracking-widest flex flex-col sm:flex-row justify-center items-center gap-2">
+      <footer className="w-full text-center py-6 border-t border-slate-900/40 text-[10px] sm:text-xs font-mono text-slate-600 z-10 uppercase tracking-widest flex flex-col sm:flex-row justify-center items-center gap-2 px-4">
         <span>© 2026 Jungian Audit System</span>
         <span className="hidden sm:inline">•</span>
         <span>Based on Classical Analytical Psychology Typologies</span>
+        <span className="hidden sm:inline">•</span>
+        <a 
+          href="https://t.me/ryabinina_pro_ai" 
+          target="_blank" 
+          rel="noopener noreferrer" 
+          className={`transition-colors duration-150 normal-case flex items-center gap-1 ${
+            isFemale 
+              ? "text-slate-500 hover:text-rose-400" 
+              : "text-slate-500 hover:text-amber-500"
+          }`}
+        >
+          Telegram: @ryabinina_pro_ai
+        </a>
       </footer>
 
     </div>
